@@ -1,0 +1,49 @@
+# ========================================
+# 1. 编译构建生成的临时文件夹与缓存
+# ========================================
+/build/
+**/build/
+.gradle/
+.kotlin/
+
+# ========================================
+# 2. 本地机器环境配置文件（绝不能提交）
+# ========================================
+local.properties
+
+# ========================================
+# 3. Android Studio / IntelliJ IDEA 个人配置
+# ========================================
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usageStatistics.xml
+.idea/dictionaries
+.idea/shelf
+.idea/caches/
+.idea/libraries/
+
+# ========================================
+# 4. 操作系统生成的垃圾文件
+# ========================================
+# Windows 缩略图与目录配置
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS 系统附加文件
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ========================================
+# 5. 其他编辑器或打包临时文件
+# ========================================
+*.iml
+*.hprof
+.apt_generated
+.externalNativeBuild
+.cxx/
+captures/
+.vs/
