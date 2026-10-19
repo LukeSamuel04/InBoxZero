@@ -1,8 +1,8 @@
 package com.example.inboxzero.mocksender.worker
 
 import com.example.inboxzero.mocksender.core.NotificationDispatcher
-import com.example.inboxzero.mocksender.data.getRandomCorpusMessage
-
+import com.example.inboxzero.mocksender.data.CORPUS_MESSAGES
+import com.example.inboxzero.mocksender.data.MockMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -10,68 +10,152 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/**
- * 自动化连发调度器 (Worker)：握着发射枪管 (dispatcher)，利用协程在后台按节奏自动扣扳机
- */
+enum class BurstMode {
+    NUMBERED,          // 1. 无情复读机：发送 "测试消息 (1)", "测试消息 (2)"... (需要手动停止)
+    CORPUS_SEQUENTIAL, // 2. 剧本模式：严格按照语料库顺序发，发完所有条目后自动停止
+    CORPUS_REALISTIC   // 3. 拟真随机：剧情按步骤推进，噪音随机穿插，所有语料发完一遍后自动停止
+}
+
 class AutoBurstWorker(private val dispatcher: NotificationDispatcher) {
 
-    // 1. 协程遥控器 (Job)：用来随时按下“急刹车”
     private var burstJob: Job? = null
-
-    // 2. 创建专门用于后台任务的协程车间 (不会卡顿主界面)
     private val workerScope = CoroutineScope(Dispatchers.Default)
 
-    // 3. 序号递增模式的计数器：用来记录发到了“测试消息 (第几条)”
+    // ==========================================
+    // 进度与状态追踪器 (荷官的记忆)
+    // ==========================================
     private var sequenceCounter = 0
+    private var sequentialIndex = 0
 
-    // 4. 对外公开的只读状态：判断当前是不是正在突突突连发中
+    // 记录每个连续剧进行到了第几步
+    private val threadProgressTracker = mutableMapOf<String, Int>()
+
+    // 【全新设计：独立抽牌堆】初始化时，将所有无剧情的“噪音”装进这个可变列表
+    private val noiseDrawPile = CORPUS_MESSAGES
+        .filter { it.threadId == null }
+        .toMutableList()
+
     val isRunning: Boolean
         get() = burstJob?.isActive == true
 
     /**
-     * 启动无限连发
-     * @param useCorpusMode true = 随机抽语料库模式；false = 序号递增模式 (测试消息 1, 2, 3...)
-     * @param intervalMs 每次发射的间隔毫秒数（默认 800 毫秒发一条，方便肉眼观察）
+     * 启动连发
+     * @param onProgress 进度汇报对讲机 (每发一条汇报一次)
+     * @param onFinish 杀青汇报对讲机 (剧本播完时呼叫，用于重置 UI 状态)
      */
-    fun startBurst(useCorpusMode: Boolean, intervalMs: Long = 800L) {
-        // 防呆保护：如果已经在运行中，直接忽略，防止重复开启多个协程
+    fun startBurst(
+        mode: BurstMode,
+        intervalMs: Long = 800L,
+        onProgress: (MockMessage) -> Unit,
+        onFinish: () -> Unit
+    ) {
         if (isRunning) return
 
-        // 在后台车间启动一个协程任务，并把遥控器交给 burstJob 保管
         burstJob = workerScope.launch {
-            // isActive 是协程自带的智能开关：只要没人按 stop，它就永远是 true
             while (isActive) {
-                if (useCorpusMode) {
-                    // 【模式 A：语料库模式】直接调用刚才 MockCorpus.kt 里的纯函数！
-                    val msg = getRandomCorpusMessage()
-                    dispatcher.sendSingle(sender = msg.sender, content = msg.content)
-                } else {
-                    // 【模式 B：序号递增模式】用于测试丢包率与顺序一致性
-                    sequenceCounter++
-                    dispatcher.sendSingle(
-                        sender = "压力测试机器人",
-                        content = "测试消息 ($sequenceCounter)"
-                    )
+                // 1. 获取下一条消息。如果返回 null，说明剧本或整个抽牌堆播完了
+                val msgToSend: MockMessage? = when (mode) {
+                    BurstMode.NUMBERED -> {
+                        sequenceCounter++
+                        MockMessage(
+                            appName = "系统测试",
+                            sender = "压力测试机器人",
+                            content = "测试消息 ($sequenceCounter)"
+                        )
+                    }
+                    BurstMode.CORPUS_SEQUENTIAL -> {
+                        if (sequentialIndex >= CORPUS_MESSAGES.size) {
+                            null // 索引越界，说明全部发完了，返回 null 触发停止
+                        } else {
+                            val msg = CORPUS_MESSAGES[sequentialIndex]
+                            sequentialIndex++
+                            msg
+                        }
+                    }
+                    BurstMode.CORPUS_REALISTIC -> {
+                        calculateNextRealisticMessage()
+                    }
                 }
 
-                // 挂起等待 800 毫秒（非阻塞式暂停，绝不卡死手机屏幕）
+                // 2. 终止判定：如果没有子弹了，执行杀青逻辑
+                if (msgToSend == null) {
+                    launch(Dispatchers.Main) { onFinish() } // 告诉 UI 播完了
+                    stopBurst() // 切断电源
+                    break // 跳出死循环
+                }
+
+                // 3. 扣动扳机发出通知
+                val displayTitle = msgToSend.groupName ?: msgToSend.sender
+                val displayContent = if (msgToSend.groupName != null) {
+                    "${msgToSend.sender}: ${msgToSend.content}"
+                } else {
+                    msgToSend.content
+                }
+                dispatcher.sendSingle(sender = displayTitle, content = displayContent)
+
+                // 4. 向 UI 汇报当前发送的消息
+                onProgress(msgToSend)
+
                 delay(intervalMs)
             }
         }
     }
 
     /**
-     * 紧急停止连发（相当于按下暂停键）
+     * 高性能算法：拟真随机发牌逻辑
+     * @return 下一条要发的消息。如果整个语料库（包括剧情和噪音）都发完了，返回 null。
      */
+    private fun calculateNextRealisticMessage(): MockMessage? {
+        val eligibleMessages = mutableListOf<MockMessage>()
+
+        // 步骤 A：找出所有还有下一步的“剧情牌”
+        val allThreadIds = CORPUS_MESSAGES.mapNotNull { it.threadId }.distinct()
+        for (tId in allThreadIds) {
+            val expectedStep = threadProgressTracker.getOrDefault(tId, 1)
+            val nextMsg = CORPUS_MESSAGES.find { it.threadId == tId && it.step == expectedStep }
+            if (nextMsg != null) {
+                eligibleMessages.add(nextMsg)
+            }
+        }
+
+        // 步骤 B：直接将“噪音抽牌堆”中剩下的牌全部倒进候选池
+        eligibleMessages.addAll(noiseDrawPile)
+
+        // 步骤 C：杀青判定
+        if (eligibleMessages.isEmpty()) {
+            return null // 剧情走完且抽牌堆空了，触发整体停止
+        }
+
+        // 步骤 D：盲盒抽取
+        val pickedMsg = eligibleMessages.random()
+
+        // 步骤 E：状态更新 (物理销毁或推进剧情)
+        if (pickedMsg.threadId != null) {
+            // 抽中的是剧情，推进该剧情的进度
+            threadProgressTracker[pickedMsg.threadId] = pickedMsg.step + 1
+        } else {
+            // 【核心优化】：抽中的是噪音，直接从抽牌堆里物理撕毁销毁，再也不会被抽到
+            noiseDrawPile.removeAll { it.id == pickedMsg.id }
+        }
+
+        return pickedMsg
+    }
+
     fun stopBurst() {
-        burstJob?.cancel() // 一键掐断协程电源
+        burstJob?.cancel()
         burstJob = null
     }
 
     /**
-     * 辅助功能：重置递增计数器（比如清空通知时顺便把序号归零）
+     * 重置所有状态，换一副新牌
      */
-    fun resetCounter() {
+    fun resetCounters() {
         sequenceCounter = 0
+        sequentialIndex = 0
+        threadProgressTracker.clear()
+
+        // 洗牌：把全新的噪音牌重新装进抽牌堆
+        noiseDrawPile.clear()
+        noiseDrawPile.addAll(CORPUS_MESSAGES.filter { it.threadId == null })
     }
 }

@@ -64,4 +64,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 //viewmodel for compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+
+    implementation("androidx.activity:activity-compose:1.8.2")
 }
