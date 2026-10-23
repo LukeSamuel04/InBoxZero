@@ -17,24 +17,16 @@ import com.example.mockmessagetester.ui.components.panels.mocksenderpanel.MockSe
 fun MockLabScreen(
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize()
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                // 开启垂直滚动，防止表盘或长剧本列表导致内容溢出屏幕
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // 直接挂载我们刚刚写好的控制面板包装层
-            MockSenderControlPanel(
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // 未来如果有其他图表或日志面板 (LogPanel)，也可以按顺序挂载在下面
-        }
+    // 直接使用 Column，不再需要 Scaffold 和 innerPadding
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        MockSenderControlPanel(
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
