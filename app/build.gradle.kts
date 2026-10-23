@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.inboxzero"
+    namespace = "com.example.mockmessagetester"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.inboxzero"
+        applicationId = "com.example.mockmessagetester"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -66,4 +66,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
     implementation("androidx.activity:activity-compose:1.8.2")
+
+    implementation("androidx.compose.foundation:foundation")
 }
