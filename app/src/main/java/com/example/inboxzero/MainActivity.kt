@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.example.inboxzero.ui.navigation.MainScaffold
+import com.example.inboxzero.ui.screens.analytics.AnalyticsScreen
 import com.example.inboxzero.ui.screens.settings.SettingsScreen
 import com.example.inboxzero.ui.theme.InboxZeroTheme
 
@@ -31,7 +32,6 @@ class MainActivity : ComponentActivity() {
             val fontScaleIndex by userPreferences.fontScaleIndex.collectAsState()
             val currentLanguage by userPreferences.language.collectAsState()
 
-            // 如果用户从未手动点过深色模式开关，则默认跟随系统；一旦点过，永久记住用户的选择
             val isDarkModeEffective = savedDarkMode ?: systemDark
 
             val (fontScale, isBoldText) = when (fontScaleIndex) {
@@ -51,6 +51,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScaffold(
+                        analyticsPageContent = {
+                            AnalyticsScreen()
+                        },
                         settingsPageContent = {
                             SettingsScreen(
                                 userPreferences = userPreferences,
