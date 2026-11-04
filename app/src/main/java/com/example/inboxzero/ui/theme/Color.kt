@@ -1,5 +1,5 @@
 //负责定义低饱和度的莫兰迪色卡
-package com.example.mockmessagetester.ui.theme
+package com.example.inboxzero.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

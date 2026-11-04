@@ -1,5 +1,5 @@
 //重要度2容器
-package com.example.mockmessagetester.ui.components.containers
+package com.example.inboxzero.ui.components.containers
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box

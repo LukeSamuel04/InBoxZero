@@ -1,5 +1,5 @@
 //重要度3无边框按钮
-package com.example.mockmessagetester.ui.components.buttons
+package com.example.inboxzero.ui.components.buttons
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape

@@ -1,4 +1,4 @@
-package com.example.mockmessagetester.ui.components.dials
+package com.example.inboxzero.ui.components.dials
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

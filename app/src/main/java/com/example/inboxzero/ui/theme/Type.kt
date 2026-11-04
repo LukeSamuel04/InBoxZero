@@ -1,5 +1,5 @@
 //负责定义防焦虑的全局字体大小与行高
-package com.example.mockmessagetester.ui.theme
+package com.example.inboxzero.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

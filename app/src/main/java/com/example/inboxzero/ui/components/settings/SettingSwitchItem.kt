@@ -1,12 +1,12 @@
-package com.example.mockmessagetester.ui.components.settings
+package com.example.inboxzero.ui.components.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
 // 导入你自己造好的精密零件
-import com.example.mockmessagetester.ui.components.switches.PrimarySwitch
-import com.example.mockmessagetester.ui.components.switches.SecondarySwitch
+import com.example.inboxzero.ui.components.switches.PrimarySwitch
+import com.example.inboxzero.ui.components.switches.SecondarySwitch
 
 /**
  * 开关型设置项语法糖。

@@ -1,5 +1,5 @@
 //重要度1容器
-package com.example.mockmessagetester.ui.components.containers
+package com.example.inboxzero.ui.components.containers
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope

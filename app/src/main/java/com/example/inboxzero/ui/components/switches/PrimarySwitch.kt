@@ -1,5 +1,5 @@
 //重要度1切换器
-package com.example.mockmessagetester.ui.components.switches
+package com.example.inboxzero.ui.components.switches
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
