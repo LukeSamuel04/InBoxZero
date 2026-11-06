@@ -4,10 +4,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
  * 支持的界面语言枚举 (简体中文 / English / Svenska)
- *
- * 核心设计原则：
- * 1. 强类型映射：避免使用容易拼写错误的硬编码字符串作为语言标识。
- * 2. 持久化兼容：枚举的 name ("ZH", "EN", "SV") 直接用于 SharedPreferences 磁盘读写。
  */
 enum class AppLanguage(val displayName: String) {
     ZH("简体中文"),
@@ -23,10 +19,6 @@ enum class AppLanguage(val displayName: String) {
 
 /**
  * InboxZero 全局强类型多语言词典契约 (AppStrings)
- *
- * 架构优势：
- * 1. 编译期安全：任何新增的 UI 词条都必须在三套语言实例中同时实现，绝不会出现运行时漏翻或崩溃。
- * 2. 零闪烁热切换：配合 CompositionLocal (LocalAppStrings)，用户在设置页切换语言时全站毫秒级重组生效。
  */
 data class AppStrings(
     // ==========================================
@@ -47,7 +39,7 @@ data class AppStrings(
     val statusUnauthorized: String,
 
     // ==========================================
-    // 3. 设置页 - 分区二：AI 引擎与过滤策略 (User Study 核心变量)
+    // 3. 设置页 - 分区二：AI 引擎与过滤策略
     // ==========================================
     val sectionAiEngine: String,
     val itemAiEngine: String,
@@ -95,23 +87,20 @@ data class AppStrings(
     // ==========================================
     // 7. 统计与心智洞察页 (Insights / AnalyticsScreen)
     // ==========================================
-    // 7.1 顶部核心减负双指标卡 (BASE METRICS)
     val insightSectionBaseMetrics: String,
     val insightFoldRateTitle: String,
     val insightFoldRateSub: String,
     val insightTimeSavedTitle: String,
     val insightTimeSavedSub: String,
 
-    // 7.2 中部多维构成环形图卡片 (Donut Chart)
     val insightSectionComposition: String,
-    val insightTabOptions: List<String>,       // [按紧急度, 按来源平台, 按耗时分布]
-    val insightDonutSummaryLeft: List<String>, // 对应 3 个维度的折叠态左侧摘要
-    val insightDonutSummaryRight: List<String>,// 对应 3 个维度的折叠态右侧高亮结论
-    val insightCenterTitleCount: String,       // 圆环中心默认标题：累计接收通知
-    val insightCenterTitleTime: String,        // 圆环中心默认标题：累计处理耗时
-    val insightUnitCount: String,              // 数量单位：条 / msgs / st
-    val insightUnitMin: String,                // 时间单位：min
-    // 扇区分类名称
+    val insightTabOptions: List<String>,
+    val insightDonutSummaryLeft: List<String>,
+    val insightDonutSummaryRight: List<String>,
+    val insightCenterTitleCount: String,
+    val insightCenterTitleTime: String,
+    val insightUnitCount: String,
+    val insightUnitMin: String,
     val sliceHighUrgency: String,
     val sliceMedUrgency: String,
     val sliceLowUrgency: String,
@@ -123,12 +112,48 @@ data class AppStrings(
     val sliceTimeMail: String,
     val sliceTimeOther: String,
 
-    // 7.3 底部每日耗时趋势柱状图卡片 (Daily Bar Chart)
     val insightSectionDailyTrend: String,
     val insightBarSummaryLeft: String,
     val insightBarSummaryRight: String,
     val insightBarAvgPrefix: String,
-    val weekDaysShort: List<String>            // 周一至周日简写
+    val weekDaysShort: List<String>,
+
+    // ==========================================
+    // 8. 首页智能防焦虑看板 (Inbox / InboxScreen)
+    // ==========================================
+    // 8.1 顶部态势感知条
+    val inboxStatusAiActive: String,       // "● AI 降噪守护中"
+    val inboxStatusBaseline: String,       // "● Baseline 时间序模式"
+    val inboxStatusThresholdPrefix: String,// "阈值"
+    val inboxBtnSimulate: String,          // "+ 模拟来信"
+
+    // 8.2 紧急度动态角标 (InboxUrgencyBadge)
+    val badgeAnalyzing: String,            // "✦ AI 解析中..."
+    val badgeUnitScore: String,            // "分" / "pts" / "p"
+    val badgeLevelHigh: String,            // "高优"
+    val badgeLevelMed: String,             // "日常"
+    val badgeLevelLow: String,             // "低优"
+
+    // 8.3 会话卡片与原地回复 (InboxSessionCard - 为第二步预留)
+    val inboxSectionFocus: String,         // "核心关注会话 (FOCUS INBOX)"
+    val inboxSectionAllChrono: String,     // "全部实时会话 (BASELINE)"
+    val inboxUnreadSuffix: String,         // "条未读"
+    val inboxAiSummaryPrefix: String,      // "✦ 摘要："
+    val inboxReplyPlaceholder: String,     // "直接回复..."
+    val inboxBtnSend: String,              // "发送"
+    val inboxReplySentToast: String,       // "✓ 已通过后台静默回复并归档"
+    val inboxBtnMarkDone: String,          // "✓ 标为已处理"
+    val inboxBtnOpenApp: String,           // "↗ 打开原应用"
+    val inboxBtnPromote: String,           // "↑ 移出杂音舱"
+
+    // 8.4 底部低优杂音收纳舱 (InboxNoiseVaultCard - 为第二步预留)
+    val inboxVaultTitle: String,           // "📦 低优杂音静默收纳舱"
+    val inboxVaultFoldedPrefix: String,    // "已折叠"
+    val inboxVaultFoldedSuffix: String,    // "个会话"
+    val inboxVaultPeekPrefix: String,      // "包含："
+    val inboxVaultBtnClearAll: String,     // "🧹 一键已读全部杂音"
+    val inboxEmptyTitle: String,           // "🎉 收件箱已清零 (Inbox Zero)"
+    val inboxEmptySubtitle: String         // "当前没有任何待处理的高优打断，享受专注时光吧"
 )
 
 // ============================================================================
@@ -218,7 +243,38 @@ val ZhStrings = AppStrings(
     insightBarSummaryLeft = "累计处理耗时 239m",
     insightBarSummaryRight = "日均 34m · 今日 19m",
     insightBarAvgPrefix = "日均",
-    weekDaysShort = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+    weekDaysShort = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日"),
+
+    // --- 8. 首页智能防焦虑看板 ---
+    inboxStatusAiActive = "● AI 降噪守护中",
+    inboxStatusBaseline = "● Baseline 时间序模式",
+    inboxStatusThresholdPrefix = "阈值",
+    inboxBtnSimulate = "+ 模拟来信",
+
+    badgeAnalyzing = "✦ AI 解析中...",
+    badgeUnitScore = "分",
+    badgeLevelHigh = "高优",
+    badgeLevelMed = "日常",
+    badgeLevelLow = "低优",
+
+    inboxSectionFocus = "核心关注会话 (FOCUS INBOX)",
+    inboxSectionAllChrono = "全部实时会话 (BASELINE)",
+    inboxUnreadSuffix = "条未读",
+    inboxAiSummaryPrefix = "✦ 摘要：",
+    inboxReplyPlaceholder = "直接后台回复...",
+    inboxBtnSend = "发送",
+    inboxReplySentToast = "✓ 已通过后台静默回复并归档",
+    inboxBtnMarkDone = "✓ 标为已处理",
+    inboxBtnOpenApp = "↗ 打开原应用",
+    inboxBtnPromote = "↑ 移出杂音舱",
+
+    inboxVaultTitle = "📦 低优杂音静默收纳舱",
+    inboxVaultFoldedPrefix = "已折叠",
+    inboxVaultFoldedSuffix = "个会话",
+    inboxVaultPeekPrefix = "包含：",
+    inboxVaultBtnClearAll = "🧹 一键已读全部杂音",
+    inboxEmptyTitle = "🎉 收件箱已清零 (Inbox Zero)",
+    inboxEmptySubtitle = "当前没有任何待处理的高优打断，享受专注时光吧"
 )
 
 // ============================================================================
@@ -308,7 +364,38 @@ val EnStrings = AppStrings(
     insightBarSummaryLeft = "Total time spent 239m",
     insightBarSummaryRight = "Avg 34m · Today 19m",
     insightBarAvgPrefix = "Avg",
-    weekDaysShort = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    weekDaysShort = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+
+    // --- 8. Inbox / InboxScreen ---
+    inboxStatusAiActive = "● AI Shield Active",
+    inboxStatusBaseline = "● Baseline Chronological",
+    inboxStatusThresholdPrefix = "Cutoff",
+    inboxBtnSimulate = "+ Simulate Msg",
+
+    badgeAnalyzing = "✦ AI Analyzing...",
+    badgeUnitScore = "pts",
+    badgeLevelHigh = "High",
+    badgeLevelMed = "Normal",
+    badgeLevelLow = "Low",
+
+    inboxSectionFocus = "FOCUS INBOX",
+    inboxSectionAllChrono = "ALL SESSIONS (BASELINE)",
+    inboxUnreadSuffix = "unread",
+    inboxAiSummaryPrefix = "✦ Summary: ",
+    inboxReplyPlaceholder = "Inline reply...",
+    inboxBtnSend = "Send",
+    inboxReplySentToast = "✓ Replied silently in background & archived",
+    inboxBtnMarkDone = "✓ Mark Done",
+    inboxBtnOpenApp = "↗ Open App",
+    inboxBtnPromote = "↑ Move to Focus",
+
+    inboxVaultTitle = "📦 Low-Priority Noise Vault",
+    inboxVaultFoldedPrefix = "Folded",
+    inboxVaultFoldedSuffix = "sessions",
+    inboxVaultPeekPrefix = "Includes: ",
+    inboxVaultBtnClearAll = "🧹 Clear All Noise",
+    inboxEmptyTitle = "🎉 You've reached Inbox Zero",
+    inboxEmptySubtitle = "No high-priority interruptions pending. Enjoy your focus time!"
 )
 
 // ============================================================================
@@ -398,7 +485,38 @@ val SvStrings = AppStrings(
     insightBarSummaryLeft = "Total hanteringstid 239m",
     insightBarSummaryRight = "Snitt 34m · Idag 19m",
     insightBarAvgPrefix = "Snitt",
-    weekDaysShort = listOf("Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön")
+    weekDaysShort = listOf("Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"),
+
+    // --- 8. Inkorg / InboxScreen ---
+    inboxStatusAiActive = "● AI-skydd aktivt",
+    inboxStatusBaseline = "● Baslinje (Kronologisk)",
+    inboxStatusThresholdPrefix = "Gräns",
+    inboxBtnSimulate = "+ Simulera",
+
+    badgeAnalyzing = "✦ AI analyserar...",
+    badgeUnitScore = "p",
+    badgeLevelHigh = "Hög",
+    badgeLevelMed = "Normal",
+    badgeLevelLow = "Låg",
+
+    inboxSectionFocus = "FOKUSINKORG",
+    inboxSectionAllChrono = "ALLA KONVERSATIONER (BASLINJE)",
+    inboxUnreadSuffix = "olästa",
+    inboxAiSummaryPrefix = "✦ Sammanfattning: ",
+    inboxReplyPlaceholder = "Svara direkt...",
+    inboxBtnSend = "Skicka",
+    inboxReplySentToast = "✓ Svar skickat i bakgrunden & arkiverat",
+    inboxBtnMarkDone = "✓ Klarmarkera",
+    inboxBtnOpenApp = "↗ Öppna app",
+    inboxBtnPromote = "↑ Flytta till fokus",
+
+    inboxVaultTitle = "📦 Lågprioriterat brusvalv",
+    inboxVaultFoldedPrefix = "Dolda",
+    inboxVaultFoldedSuffix = "chattar",
+    inboxVaultPeekPrefix = "Innehåller: ",
+    inboxVaultBtnClearAll = "🧹 Rensa allt brus",
+    inboxEmptyTitle = "🎉 Inkorgen är tom (Inbox Zero)",
+    inboxEmptySubtitle = "Inga brådskande avbrott just nu. Njut av din fokustid!"
 )
 
 /**

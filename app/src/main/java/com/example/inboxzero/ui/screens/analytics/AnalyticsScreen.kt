@@ -20,10 +20,10 @@ import androidx.compose.ui.unit.dp
 import com.example.inboxzero.ui.components.charts.DailyBarData
 import com.example.inboxzero.ui.components.charts.DonutSliceData
 import com.example.inboxzero.ui.components.charts.InsightBarChart
-import com.example.inboxzero.ui.components.charts.InsightCollapsibleCard
 import com.example.inboxzero.ui.components.charts.InsightDonutChart
 import com.example.inboxzero.ui.components.charts.SegmentedPillRow
 import com.example.inboxzero.ui.components.charts.StatSummaryRow
+import com.example.inboxzero.ui.components.containers.CollapsibleContainer
 import com.example.inboxzero.ui.theme.LocalAppStrings
 import com.example.inboxzero.ui.theme.MorandiAmber
 import com.example.inboxzero.ui.theme.MorandiBlue
@@ -34,10 +34,6 @@ import com.example.inboxzero.ui.theme.MorandiTeal
 
 /**
  * InboxZero 统计与心智洞察主屏幕 (Tab 1: Analytics / Insights Screen)
- *
- * 核心 HCI 架构设计：
- * 1. 首屏一屏尽览 (Above-the-Fold)：采用“上折 (BASE METRICS) + 中展 (环形图) + 下折 (趋势柱状图)”的渐进式披露布局。
- * 2. 全量多语言响应式：所有图表维度、图例标签、星期轴均绑定 LocalAppStrings，支持中/英/瑞三语零延迟切换。
  */
 @Composable
 fun AnalyticsScreen(
@@ -45,17 +41,14 @@ fun AnalyticsScreen(
 ) {
     val strings = LocalAppStrings.current
 
-    // --- 1. 三大模块的折叠/展开状态 (使用 rememberSaveable 跨 Tab 保持状态) ---
     var isTopMetricsExpanded by rememberSaveable { mutableStateOf(false) }
     var isDonutExpanded by rememberSaveable { mutableStateOf(true) }
     var isBarExpanded by rememberSaveable { mutableStateOf(false) }
 
-    // --- 2. 图表内部交互状态 ---
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedSliceIndex by remember { mutableStateOf<Int?>(null) }
-    var selectedBarIndex by remember { mutableStateOf<Int?>(6) } // 默认高亮最后一天 (周日)
+    var selectedBarIndex by remember { mutableStateOf<Int?>(6) }
 
-    // --- 3. 根据当前选中维度与当前语言，动态组装莫兰迪环形图扇区数据 ---
     val currentSlices = remember(selectedTabIndex, strings) {
         val uCount = strings.insightUnitCount
         val uMin = strings.insightUnitMin
@@ -79,7 +72,6 @@ fun AnalyticsScreen(
         }
     }
 
-    // --- 4. 根据当前语言，动态组装近 7 日趋势柱状图数据 ---
     val dailyBars = remember(strings) {
         val rawMinutes = listOf(38f, 45f, 29f, 52f, 34f, 22f, 19f)
         strings.weekDaysShort.mapIndexed { index, dayName ->
@@ -99,9 +91,7 @@ fun AnalyticsScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // ==========================================
         // 模块一：顶部心智减负双指标卡 (BASE METRICS)
-        // ==========================================
         StatSummaryRow(
             sectionTitle = strings.insightSectionBaseMetrics,
             leftTitle = strings.insightFoldRateTitle,
@@ -114,10 +104,8 @@ fun AnalyticsScreen(
             onExpandChange = { isTopMetricsExpanded = it }
         )
 
-        // ==========================================
-        // 模块二：中部多维构成环形图 (默认展开)
-        // ==========================================
-        InsightCollapsibleCard(
+        // 模块二：中部多维构成环形图 (复用 CollapsibleContainer)
+        CollapsibleContainer(
             title = strings.insightSectionComposition,
             summaryLeftText = strings.insightDonutSummaryLeft.getOrElse(selectedTabIndex) { "" },
             summaryRightHighlight = strings.insightDonutSummaryRight.getOrElse(selectedTabIndex) { "" },
@@ -153,10 +141,8 @@ fun AnalyticsScreen(
             }
         }
 
-        // ==========================================
-        // 模块三：底部每日趋势柱状图 (默认半折叠露出摘要)
-        // ==========================================
-        InsightCollapsibleCard(
+        // 模块三：底部每日趋势柱状图 (复用 CollapsibleContainer)
+        CollapsibleContainer(
             title = strings.insightSectionDailyTrend,
             summaryLeftText = strings.insightBarSummaryLeft,
             summaryRightHighlight = strings.insightBarSummaryRight,
@@ -172,7 +158,6 @@ fun AnalyticsScreen(
             )
         }
 
-        // 底部留白，供悬浮胶囊导航栏展示毛玻璃透视效果
         Spacer(modifier = Modifier.height(96.dp))
     }
 }
