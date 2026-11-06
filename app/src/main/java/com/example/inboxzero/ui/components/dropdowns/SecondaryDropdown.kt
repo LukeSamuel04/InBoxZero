@@ -1,4 +1,4 @@
-package com.example.mockmessagetester.ui.components.dropdowns
+package com.example.inboxzero.ui.components.dropdowns
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box

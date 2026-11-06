@@ -1,70 +1,94 @@
-//主题引擎：根据系统自动切换深浅色
-package com.example.mockmessagetester.ui.theme
+package com.example.inboxzero.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 
-// 1. 深色模式配色方案映射
 private val DarkColorScheme = darkColorScheme(
     primary = MorandiBlueDark,
-    secondary = MorandiGreen, // 用于成功/运行状态
-    tertiary = MorandiRed,    // 用于警告/停止状态
+    secondary = MorandiGreen,
+    tertiary = MorandiRed,
     background = BackgroundDark,
     surface = SurfaceDark,
-
-    onPrimary = TextPrimaryDark,     // 主按钮上的文字颜色
-    onBackground = TextPrimaryDark,  // 背景上的文字颜色
-    onSurface = TextPrimaryDark      // 卡片上的文字颜色
+    onPrimary = TextPrimaryDark,
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark
 )
 
-// 2. 浅色模式配色方案映射
 private val LightColorScheme = lightColorScheme(
     primary = MorandiBlue,
     secondary = MorandiGreen,
     tertiary = MorandiRed,
     background = BackgroundLight,
     surface = SurfaceLight,
-
-    onPrimary = SurfaceLight,        // 浅色模式下，蓝色主按钮上用白色文字
+    onPrimary = SurfaceLight,
     onBackground = TextPrimaryLight,
     onSurface = TextPrimaryLight
 )
 
-/**
- * InboxZero 主题引擎
- * 负责根据系统设置，自动将底层的颜色、字体注入到整个应用中。
- */
 @Composable
 fun InboxZeroTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    fontScale: Float = 1.0f,
+    boldText: Boolean = false,
+    language: AppLanguage = AppLanguage.ZH, // ✨ 新增：全局语言状态
     content: @Composable () -> Unit
 ) {
-    // 动态选择色板
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    // 处理系统状态栏 (沉浸式防焦虑设计：让状态栏颜色和背景色融为一体)
+    // 根据当前选中的语言，瞬间切换对应的词典实例
+    val appStrings = when (language) {
+        AppLanguage.ZH -> ZhStrings
+        AppLanguage.EN -> EnStrings
+        AppLanguage.SV -> SvStrings
+    }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
-            // 浅色模式下状态栏图标变黑，深色模式下变白
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
-    // 组装并提供给 Material 3 引擎
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val adaptiveTypography = if (boldText) {
+        Typography(
+            titleLarge = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            bodyLarge = Typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            bodyMedium = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            labelLarge = Typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            labelMedium = Typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            labelSmall = Typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+        )
+    } else {
+        Typography
+    }
+
+    val currentDensity = LocalDensity.current
+    CompositionLocalProvider(
+        LocalDensity provides Density(
+            density = currentDensity.density,
+            fontScale = fontScale
+        ),
+        LocalAppStrings provides appStrings // ✨ 将多语言词典广播到全站任意角落
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = adaptiveTypography,
+            content = content
+        )
+    }
 }

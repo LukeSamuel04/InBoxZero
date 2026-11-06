@@ -54,7 +54,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    val room_version = "2.6.1"
+    val room_version = "2.8.4"
     // 目前较新的稳定版本
     implementation("androidx.room:room-runtime:$room_version")
     // Kotlin 扩展和协程支持 (为了我们后续使用 Flow 和 suspend 函数)

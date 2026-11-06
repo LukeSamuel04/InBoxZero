@@ -1,4 +1,4 @@
-package com.example.mockmessagetester.ui.components.settings
+package com.example.inboxzero.ui.components.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 // 导入我们定义好的次级容器
-import com.example.mockmessagetester.ui.components.containers.SecondaryContainer
+import com.example.inboxzero.ui.components.containers.SecondaryContainer
 
 /**
  * 工业级设置分组卡片 (Container)
