@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.charts
+package com.example.inboxzero.ui.components.analytics
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inboxzero.ui.components.containers.CompactContainer
+import com.example.inboxzero.ui.components.shared.containers.CompactContainer
 
 /**
  * 统计页通用可折叠图表容器 (移动端触控版：直接点击摘要行展开/收起图表)

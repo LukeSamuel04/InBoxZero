@@ -1,5 +1,5 @@
 //重要度2切换器
-package com.example.inboxzero.ui.components.switches
+package com.example.inboxzero.ui.components.shared.switches
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch

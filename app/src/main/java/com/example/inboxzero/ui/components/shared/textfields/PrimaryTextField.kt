@@ -1,5 +1,5 @@
 //重要度1输入框
-package com.example.inboxzero.ui.components.textfields
+package com.example.inboxzero.ui.components.shared.textfields
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape

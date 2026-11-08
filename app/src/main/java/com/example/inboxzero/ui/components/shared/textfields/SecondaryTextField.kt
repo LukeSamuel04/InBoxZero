@@ -1,5 +1,5 @@
 //重要度2输入框
-package com.example.inboxzero.ui.components.textfields
+package com.example.inboxzero.ui.components.shared.textfields
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme

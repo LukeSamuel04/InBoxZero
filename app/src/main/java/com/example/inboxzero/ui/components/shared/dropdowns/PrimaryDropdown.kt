@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.dropdowns
+package com.example.inboxzero.ui.components.shared.dropdowns
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape

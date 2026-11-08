@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.dropdowns
+package com.example.inboxzero.ui.components.shared.dropdowns
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box

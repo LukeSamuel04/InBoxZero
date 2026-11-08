@@ -1,5 +1,5 @@
 //重要度2按钮
-package com.example.inboxzero.ui.components.buttons
+package com.example.inboxzero.ui.components.shared.buttons
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
