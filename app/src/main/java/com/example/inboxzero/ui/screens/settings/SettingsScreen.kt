@@ -38,7 +38,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.inboxzero.InboxZeroApplication
 import com.example.inboxzero.data.local.UserPreferences
-import com.example.inboxzero.ui.components.dropdowns.SecondaryDropdown
+import com.example.inboxzero.ui.components.shared.dropdowns.SecondaryDropdown
 import com.example.inboxzero.ui.components.settings.SettingActionItem
 import com.example.inboxzero.ui.components.settings.SettingItemBase
 import com.example.inboxzero.ui.components.settings.SettingSectionCard

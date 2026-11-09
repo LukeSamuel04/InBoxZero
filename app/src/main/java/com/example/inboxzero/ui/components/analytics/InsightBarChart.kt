@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.charts
+package com.example.inboxzero.ui.components.analytics
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState

@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.charts
+package com.example.inboxzero.ui.components.analytics
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inboxzero.ui.components.containers.CompactContainer
+import com.example.inboxzero.ui.components.shared.containers.CompactContainer
 
 /**
  * 统计页顶部：心智减负双指标总览条 (移动端触控优化版：直接点击卡片区域展开/收起)

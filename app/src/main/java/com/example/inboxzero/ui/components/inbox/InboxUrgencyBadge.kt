@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,35 +31,30 @@ import com.example.inboxzero.ui.theme.MorandiRed
 import com.example.inboxzero.ui.theme.MorandiTeal
 
 /**
- * AI 紧急度动态呼吸角标 (Inbox Urgency Badge)
- *
- * 核心 HCI 特性：
- * 1. 无焦虑异步等待：在 LLM/混合引擎计算期间 (isAnalyzing = true)，采用正弦呼吸透明度动画展示“✦ AI 解析中...”，抛弃令人紧张的旋转菊花圈。
- * 2. 莫兰迪语义分级：解析完成后平滑过渡为对应色阶的分数胶囊 (高优灰粉红 / 日常暖沙黄 / 低优鼠尾草绿)。
+ * 极简纯数字 AI 紧急度角标 (适配四级同色系卡片背景)
  */
 @Composable
 fun InboxUrgencyBadge(
     isAnalyzing: Boolean,
     score: Int,
-    threshold: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isRead: Boolean = false
 ) {
     val strings = LocalAppStrings.current
 
     Crossfade(
         targetState = isAnalyzing,
-        animationSpec = tween(durationMillis = 350),
+        animationSpec = tween(durationMillis = 300),
         label = "UrgencyBadgeCrossfade",
         modifier = modifier
     ) { analyzing ->
         if (analyzing) {
-            // 阶段一：AI 异步计算中的柔和呼吸态
             val infiniteTransition = rememberInfiniteTransition(label = "AnalyzingPulse")
             val pulseAlpha by infiniteTransition.animateFloat(
-                initialValue = 0.40f,
+                initialValue = 0.35f,
                 targetValue = 0.95f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+                    animation = tween(durationMillis = 850, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "PulseAlpha"
@@ -69,46 +65,51 @@ fun InboxUrgencyBadge(
                 modifier = Modifier
                     .alpha(pulseAlpha)
                     .clip(CircleShape)
-                    .background(MorandiTeal.copy(alpha = 0.16f))
-                    .border(
-                        width = 1.dp,
-                        color = MorandiTeal.copy(alpha = 0.45f),
-                        shape = CircleShape
-                    )
+                    .background(MorandiTeal.copy(alpha = 0.20f))
+                    .border(1.dp, MorandiTeal.copy(alpha = 0.55f), CircleShape)
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = strings.badgeAnalyzing,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                    fontWeight = FontWeight.Medium,
+                    text = strings.badgeAnalyzingShort,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
         } else {
-            // 阶段二：AI 评分已回填的稳定态
-            val (badgeColor, levelLabel) = when {
-                score >= 70 -> MorandiRed to strings.badgeLevelHigh
-                score >= threshold -> MorandiAmber to strings.badgeLevelMed
-                else -> MorandiGreen to strings.badgeLevelLow
+            // 四级色彩对应：>=70 绯红，45..69 琥珀橙，20..44 鼠尾草绿，<20 浅冷灰
+            val tierAccentColor = when {
+                score >= 70 -> MorandiRed
+                score >= 45 -> MorandiAmber
+                score >= 20 -> MorandiGreen
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            val bgColor = when {
+                isRead || score < 20 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
+                score >= 70 -> tierAccentColor.copy(alpha = 0.90f)
+                else -> tierAccentColor.copy(alpha = 0.82f)
+            }
+
+            val textColor = when {
+                isRead || score < 20 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+                else -> Color.White
             }
 
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(badgeColor.copy(alpha = 0.18f))
-                    .border(
-                        width = 1.dp,
-                        color = badgeColor.copy(alpha = 0.50f),
-                        shape = CircleShape
-                    )
+                    .background(bgColor)
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = "$score${strings.badgeUnitScore} · $levelLabel",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = score.toString(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = if (score >= 70) 11.5.sp else 10.5.sp
+                    ),
+                    fontWeight = if (isRead) FontWeight.Medium else FontWeight.ExtraBold,
+                    color = textColor
                 )
             }
         }

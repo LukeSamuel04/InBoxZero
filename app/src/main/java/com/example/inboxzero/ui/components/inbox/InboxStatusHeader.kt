@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inboxzero.ui.components.containers.CompactContainer
+import com.example.inboxzero.ui.components.shared.containers.CompactContainer
 import com.example.inboxzero.ui.theme.LocalAppStrings
 import com.example.inboxzero.ui.theme.MorandiAmber
 import com.example.inboxzero.ui.theme.MorandiGreen

@@ -1,4 +1,4 @@
-package com.example.inboxzero.ui.components.containers
+package com.example.inboxzero.ui.components.shared.containers
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring

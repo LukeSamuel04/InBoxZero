@@ -5,8 +5,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
 // 导入你自己造好的精密零件
-import com.example.inboxzero.ui.components.switches.PrimarySwitch
-import com.example.inboxzero.ui.components.switches.SecondarySwitch
+import com.example.inboxzero.ui.components.shared.switches.PrimarySwitch
+import com.example.inboxzero.ui.components.shared.switches.SecondarySwitch
 
 /**
  * 开关型设置项语法糖。
