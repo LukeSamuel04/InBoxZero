@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,17 +31,12 @@ import com.example.inboxzero.ui.theme.MorandiRed
 import com.example.inboxzero.ui.theme.MorandiTeal
 
 /**
- * 极简纯数字 AI 紧急度角标 (Inbox Urgency Badge)
- *
- * 人机工效改进：
- * 1. 零文字噪音：移除“分 · 高优/日常”冗余后缀，仅保留纯数字与语义色彩，0.1 秒直觉扫视。
- * 2. 已读视觉降权：当 isRead = true 时，角标自动褪去高饱和色彩，转为低对比度浅灰胶囊。
+ * 极简纯数字 AI 紧急度角标 (适配四级同色系卡片背景)
  */
 @Composable
 fun InboxUrgencyBadge(
     isAnalyzing: Boolean,
     score: Int,
-    threshold: Int,
     modifier: Modifier = Modifier,
     isRead: Boolean = false
 ) {
@@ -69,40 +65,35 @@ fun InboxUrgencyBadge(
                 modifier = Modifier
                     .alpha(pulseAlpha)
                     .clip(CircleShape)
-                    .background(MorandiTeal.copy(alpha = 0.16f))
-                    .border(1.dp, MorandiTeal.copy(alpha = 0.45f), CircleShape)
-                    .padding(horizontal = 7.dp, vertical = 2.dp)
+                    .background(MorandiTeal.copy(alpha = 0.20f))
+                    .border(1.dp, MorandiTeal.copy(alpha = 0.55f), CircleShape)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = strings.badgeAnalyzingShort,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
         } else {
-            val rawBadgeColor = when {
+            // 四级色彩对应：>=70 绯红，45..69 琥珀橙，20..44 鼠尾草绿，<20 浅冷灰
+            val tierAccentColor = when {
                 score >= 70 -> MorandiRed
-                score >= threshold -> MorandiAmber
-                else -> MorandiGreen
+                score >= 45 -> MorandiAmber
+                score >= 20 -> MorandiGreen
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
 
-            val bgColor = if (isRead) {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
-            } else {
-                rawBadgeColor.copy(alpha = if (score >= 70) 0.85f else 0.20f)
-            }
-
-            val borderColor = if (isRead) {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.20f)
-            } else {
-                rawBadgeColor.copy(alpha = 0.55f)
+            val bgColor = when {
+                isRead || score < 20 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
+                score >= 70 -> tierAccentColor.copy(alpha = 0.90f)
+                else -> tierAccentColor.copy(alpha = 0.82f)
             }
 
             val textColor = when {
-                isRead -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                score >= 70 -> MaterialTheme.colorScheme.surface
-                else -> MaterialTheme.colorScheme.onSurface
+                isRead || score < 20 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+                else -> Color.White
             }
 
             Box(
@@ -110,12 +101,13 @@ fun InboxUrgencyBadge(
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(bgColor)
-                    .border(width = 1.dp, color = borderColor, shape = CircleShape)
-                    .padding(horizontal = 7.dp, vertical = 1.5.dp)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = score.toString(),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = if (score >= 70) 11.5.sp else 10.5.sp
+                    ),
                     fontWeight = if (isRead) FontWeight.Medium else FontWeight.ExtraBold,
                     color = textColor
                 )

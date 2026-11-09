@@ -62,12 +62,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inboxzero.data.model.InboxMessage
 import com.example.inboxzero.data.model.InboxSession
+import com.example.inboxzero.ui.components.shared.notificationapplogo.NotificationAppLogo
 import com.example.inboxzero.ui.theme.LocalAppStrings
 import com.example.inboxzero.ui.theme.MorandiAmber
 import com.example.inboxzero.ui.theme.MorandiBlue
 import com.example.inboxzero.ui.theme.MorandiGreen
 import com.example.inboxzero.ui.theme.MorandiPurple
 import com.example.inboxzero.ui.theme.MorandiRed
+import com.example.inboxzero.ui.theme.MorandiTeal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -76,18 +78,15 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * UI 层软件性质四分类枚举 (仅用于视图层色彩编码与顶部 Tab 过滤，不污染 data/model)
+ * UI 层软件性质四分类枚举 (用于顶部筛选栏过滤，不污染 data/model)
  */
 enum class UiAppCategory(val tabIndex: Int, val color: Color) {
-    CHAT(1, MorandiGreen),     // 聊天通讯：微信、QQ、WhatsApp
-    WORK(2, MorandiBlue),      // 办公学业：钉钉、领英、Canvas、Outlook
-    SOCIAL(3, MorandiPurple),  // 社交内容：小红书、Instagram、TikTok、Steam
-    SERVICE(4, MorandiAmber)   // 生活服务：京东、淘宝、快递、系统通知
+    CHAT(1, MorandiGreen),     // 聊天通讯
+    WORK(2, MorandiBlue),      // 办公学业
+    SOCIAL(3, MorandiPurple),  // 社交内容
+    SERVICE(4, MorandiAmber)   // 生活服务
 }
 
-/**
- * UI 层扩展函数：根据 packageName 推导软件性质分类
- */
 fun InboxSession.resolveUiCategory(): UiAppCategory {
     val pkg = packageName.lowercase(Locale.ROOT)
     return when {
@@ -105,18 +104,11 @@ fun InboxSession.resolveUiCategory(): UiAppCategory {
     }
 }
 
-/**
- * UI 层扩展属性：推导卡片主标题（群聊优先显示群名，单聊显示联系人）
- */
 val InboxSession.uiDisplayTitle: String
     get() = if (messageType == 2 && !groupName.isNullOrBlank()) groupName else senderName
 
 /**
- * 看板会话核心卡片 (Inbox Session Card)
- *
- * 核心 HCI 与手势设计：
- * 1. 双通道色彩：左侧 4.dp 竖线编码“软件性质”，卡片微底色编码“高优/日常/已读优先级”。
- * 2. 搭配 A 手势：单击仅展开/收起详情；双击展开并标为已读；左划滑出右侧莫兰迪红 [归档] 按钮，点击按钮执行归档。
+ * 看板会话核心卡片 (方案 A：四级同色系深浅拼色 + 三级阶梯高度 + 左侧宽色带 Logo 剪影)
  */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -138,12 +130,10 @@ fun InboxSessionCard(
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    // 右侧红色归档按钮抽屉宽度 (74.dp)
-    val archiveButtonWidthDp = 74.dp
+    val archiveButtonWidthDp = 76.dp
     val maxRevealPx = with(density) { archiveButtonWidthDp.toPx() }
     val offsetX = remember { Animatable(0f) }
 
-    // 同步外部互斥状态：当其他卡片被拉开时，当前卡片自动平滑收拢
     LaunchedEffect(isArchiveRevealed) {
         val target = if (isArchiveRevealed) -maxRevealPx else 0f
         offsetX.animateTo(
@@ -151,9 +141,6 @@ fun InboxSessionCard(
             animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
         )
     }
-
-    val uiCategory = remember(session.packageName) { session.resolveUiCategory() }
-    val categoryAccentColor = uiCategory.color
 
     var replyDraft by rememberSaveable(session.sessionId) { mutableStateOf("") }
     var isReplySuccess by remember { mutableStateOf(false) }
@@ -167,35 +154,92 @@ fun InboxSessionCard(
         }
     }
 
-    // --- 计算卡片优先级染色与已读透明度 ---
-    val isHighPriorityUnread = !session.isRead && !session.isAnalyzing &&
-            session.urgencyScore >= 70 && !isBaselineMode
-
+    // =========================================================================
+    // 1. 四级重要度色彩编码 (红: 高优 >=70 | 橙: 中等 45..69 | 绿: 中低 20..44 | 白: 噪音 <20)
+    // =========================================================================
+    val score = session.urgencyScore
     val baseSurface = MaterialTheme.colorScheme.surface
-    val targetCardBg = when {
-        isHighPriorityUnread -> MorandiRed.copy(alpha = 0.09f).compositeOver(baseSurface)
-        !session.isRead && !session.isAnalyzing && session.urgencyScore < threshold && !isBaselineMode ->
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f).compositeOver(baseSurface)
-        else -> baseSurface
+
+    val (targetRibbonColor, targetCardBg, targetBorderColor) = remember(
+        score,
+        session.isRead,
+        session.isAnalyzing,
+        isBaselineMode,
+        baseSurface
+    ) {
+        when {
+            // Baseline 模式或已读状态：统一褪色为纯净白底 + 柔和浅灰侧翼
+            isBaselineMode || session.isRead -> Triple(
+                MorandiTeal.copy(alpha = 0.45f),
+                baseSurface,
+                Color.Gray.copy(alpha = 0.16f)
+            )
+            // AI 解析中：呼吸青色
+            session.isAnalyzing -> Triple(
+                MorandiTeal.copy(alpha = 0.85f),
+                MorandiTeal.copy(alpha = 0.14f).compositeOver(baseSurface),
+                MorandiTeal.copy(alpha = 0.38f)
+            )
+            // 第一级：高优 (>= 70分) -> 浓郁莫兰迪绯红宽色带 + 醒目暖红卡片背景 (24% 浓度)
+            score >= 70 -> Triple(
+                MorandiRed.copy(alpha = 0.88f),
+                MorandiRed.copy(alpha = 0.24f).compositeOver(baseSurface),
+                MorandiRed.copy(alpha = 0.48f)
+            )
+            // 第二级：中等 (45..69分) -> 莫兰迪琥珀橙宽色带 + 柔和暖橙卡片背景 (22% 浓度)
+            score >= 45 -> Triple(
+                MorandiAmber.copy(alpha = 0.88f),
+                MorandiAmber.copy(alpha = 0.22f).compositeOver(baseSurface),
+                MorandiAmber.copy(alpha = 0.45f)
+            )
+            // 第三级：中低 (20..44分) -> 莫兰迪鼠尾草绿宽色带 + 清浅灰绿卡片背景 (18% 浓度)
+            score >= 20 -> Triple(
+                MorandiGreen.copy(alpha = 0.82f),
+                MorandiGreen.copy(alpha = 0.18f).compositeOver(baseSurface),
+                MorandiGreen.copy(alpha = 0.38f)
+            )
+            // 第四级：纯噪音 (< 20分) -> 浅冷灰宽色带 + 纯白底色
+            else -> Triple(
+                Color.Gray.copy(alpha = 0.35f),
+                baseSurface,
+                Color.Gray.copy(alpha = 0.18f)
+            )
+        }
     }
 
-    val cardBgColor by animateColorAsState(targetValue = targetCardBg, label = "CardBgTint")
-
-    val borderColor by animateColorAsState(
-        targetValue = if (isHighPriorityUnread) {
-            MorandiRed.copy(alpha = 0.32f)
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.14f)
-        },
-        label = "CardBorderTint"
-    )
+    val ribbonColor by animateColorAsState(targetValue = targetRibbonColor, label = "RibbonColor")
+    val cardBgColor by animateColorAsState(targetValue = targetCardBg, label = "CardBgColor")
+    val borderColor by animateColorAsState(targetValue = targetBorderColor, label = "BorderColor")
 
     val cardAlpha by animateFloatAsState(
         targetValue = if (session.isRead) 0.72f else 1.0f,
         label = "CardReadAlpha"
     )
 
-    // 摘要文案（彻底移除“✦ 摘要：”废话前缀）
+    // =========================================================================
+    // 2. 三级物理高度与字号阶梯 (高优最大 > 中等其次 > 中低最紧凑)
+    // =========================================================================
+    val verticalPad = when {
+        isBaselineMode -> 13.dp
+        score >= 70 -> 18.dp
+        score >= 45 -> 13.dp
+        else -> 9.dp
+    }
+
+    val titleFontSize = when {
+        score >= 70 -> 15.5.sp
+        score >= 45 -> 14.2.sp
+        else -> 13.2.sp
+    }
+
+    val summaryFontSize = when {
+        score >= 70 -> 13.2.sp
+        score >= 45 -> 12.5.sp
+        else -> 11.8.sp
+    }
+
+    val collapsedMaxLines = if (score >= 70) 2 else 1
+
     val latestRawText = remember(session.messages) {
         val lastMsg = session.messages.lastOrNull()
         if (lastMsg != null) formatAttachmentPrefix(lastMsg.attachmentType) + lastMsg.content else ""
@@ -207,31 +251,28 @@ fun InboxSessionCard(
         latestRawText
     }
 
-    val cardShape = RoundedCornerShape(12.dp)
+    val cardShape = RoundedCornerShape(14.dp)
 
-    // 外层容器：底层右侧放置莫兰迪红 [归档] 按钮，上层为可水平滑动的卡片前景
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
     ) {
-        // =====================================================================
-        // 1. 底层右侧：莫兰迪红 [归档] 按钮（左划卡片时露出，点击才真正归档）
-        // =====================================================================
+        // 底层右侧：左划露出的红色 [归档] 按钮
         if (offsetX.value < -2f || isArchiveRevealed) {
             Box(
                 contentAlignment = Alignment.CenterEnd,
                 modifier = Modifier
                     .matchParentSize()
                     .clip(cardShape)
-                    .background(MorandiRed.copy(alpha = 0.15f))
+                    .background(MorandiRed.copy(alpha = 0.16f))
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .width(archiveButtonWidthDp)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))
+                        .clip(RoundedCornerShape(topEnd = 14.dp, bottomEnd = 14.dp))
                         .background(MorandiRed)
                         .clickable {
                             onArchiveRevealChange(false)
@@ -240,7 +281,7 @@ fun InboxSessionCard(
                 ) {
                     Text(
                         text = strings.inboxBtnArchive,
-                        style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp),
+                        style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -248,9 +289,7 @@ fun InboxSessionCard(
             }
         }
 
-        // =====================================================================
-        // 2. 上层前景：带左侧 4.dp 软件性质色条与优先级微底色的会话卡片
-        // =====================================================================
+        // 上层前景：左侧 46.dp Logo 剪影宽色带 + 右侧同色系浅底卡片主体
         Row(
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
@@ -280,17 +319,27 @@ fun InboxSessionCard(
                     }
                 )
         ) {
-            // --- 左侧 4.5dp 软件性质莫兰迪色条 (聊天绿 / 办公蓝 / 社交紫 / 服务黄) ---
+            // =================================================================
+            // 左侧 46.dp 宽色带：居中绘制纯白应用 Logo 剪影 (彻底代替文字标签)
+            // =================================================================
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .width(4.5.dp)
+                    .width(46.dp)
                     .fillMaxHeight()
-                    .background(categoryAccentColor)
-            )
+                    .background(ribbonColor)
+            ) {
+                NotificationAppLogo(
+                    packageName = session.packageName,
+                    tint = Color.White,
+                    size = if (score >= 70) 22.dp else 19.dp
+                )
+            }
 
-            // --- 右侧卡片内容主体 ---
+            // =================================================================
+            // 右侧内容区
+            // =================================================================
             Column(modifier = Modifier.weight(1f)) {
-                // 常驻紧凑头部（支持：单击仅展开偷看 / 双击展开并已读）
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -298,7 +347,6 @@ fun InboxSessionCard(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClick = {
-                                // 防呆设计：若右侧红色归档按钮正处于拉开状态，单击卡片优先收起归档按钮
                                 if (isArchiveRevealed) {
                                     onArchiveRevealChange(false)
                                 } else {
@@ -312,9 +360,9 @@ fun InboxSessionCard(
                                 onDoubleTapReadAndExpand()
                             }
                         )
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .padding(horizontal = 14.dp, vertical = verticalPad)
                 ) {
-                    // 第 1 行：联系人/群名 + 轻量来源标签 + [@] + 未读数 <---> 纯数字紧急度角标
+                    // 第 1 行：干净的联系人/群名 + [@] + 未读数 <---> 纯数字紧急度角标
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -324,10 +372,9 @@ fun InboxSessionCard(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f, fill = false)
                         ) {
-                            // 主标题：直接显示人名或群名（砍掉啰嗦的“微信 · ”前缀）
                             Text(
                                 text = session.uiDisplayTitle,
-                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
+                                style = MaterialTheme.typography.titleSmall.copy(fontSize = titleFontSize),
                                 fontWeight = if (session.isRead) FontWeight.Medium else FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -335,30 +382,13 @@ fun InboxSessionCard(
                                 modifier = Modifier.weight(1f, fill = false)
                             )
 
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            // 极简平台性质微标签 (如 [微信] / [Canvas])
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(categoryAccentColor.copy(alpha = 0.14f))
-                                    .padding(horizontal = 5.dp, vertical = 1.dp)
-                            ) {
-                                Text(
-                                    text = session.appDisplayName,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            // 群聊 @我 高亮小标签
+                            // 群聊 @我 标记
                             if (session.isMentioned && !session.isRead) {
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(MorandiRed.copy(alpha = 0.18f))
+                                        .background(MorandiRed.copy(alpha = 0.22f))
                                         .padding(horizontal = 4.dp, vertical = 1.dp)
                                 ) {
                                     Text(
@@ -370,27 +400,27 @@ fun InboxSessionCard(
                                 }
                             }
 
-                            // 未读条数（仅在未读且 >1 条时展示，已读后自动隐藏）
+                            // 未读计数 (已读后自动隐藏)
                             if (!session.isRead && session.unreadCount > 1) {
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "· ${session.unreadCount}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                                 )
                             }
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        // 右上角：仅保留极简纯数字角标（展开态或 Baseline 模式才补充显示时间）
+                        // 右上角：展开态时补充显示软件名与时间，默认折叠态仅显示纯数字胶囊
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (isExpanded || isBaselineMode) {
                                 Text(
-                                    text = formatPostTimeMillis(session.latestPostTime),
+                                    text = "${session.appDisplayName} · ${formatPostTimeMillis(session.latestPostTime)}",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                             }
@@ -399,28 +429,27 @@ fun InboxSessionCard(
                                 InboxUrgencyBadge(
                                     isAnalyzing = session.isAnalyzing,
                                     score = session.urgencyScore,
-                                    threshold = threshold,
                                     isRead = session.isRead
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(if (score >= 70) 6.dp else 4.dp))
 
-                    // 第 2 行：无前缀精炼摘要
+                    // 第 2 行：无方括号前缀的自然短句摘要
                     Text(
                         text = summaryDisplay,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 12.5.sp,
-                            lineHeight = 17.sp
+                            fontSize = summaryFontSize,
+                            lineHeight = (summaryFontSize.value + 4.5f).sp
                         ),
-                        color = if (!session.isRead && isHighPriorityUnread) {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.92f)
+                        color = if (!session.isRead && score >= 45) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.90f)
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                         },
-                        maxLines = if (isExpanded) 4 else 1,
+                        maxLines = if (isExpanded) 4 else collapsedMaxLines,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -440,11 +469,11 @@ fun InboxSessionCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                            .padding(start = 14.dp, end = 14.dp, bottom = 14.dp)
                     ) {
                         HorizontalDivider(
                             thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
 
@@ -454,15 +483,15 @@ fun InboxSessionCard(
                                 .fillMaxWidth()
                                 .height(IntrinsicSize.Min)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
                                 .padding(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .width(2.dp)
+                                    .width(2.5.dp)
                                     .fillMaxHeight()
                                     .clip(CircleShape)
-                                    .background(categoryAccentColor.copy(alpha = 0.65f))
+                                    .background(ribbonColor)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
 
@@ -481,21 +510,20 @@ fun InboxSessionCard(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // 原地回复与操作控制区
                         if (isReplySuccess) {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(MorandiGreen.copy(alpha = 0.18f))
+                                    .background(MorandiGreen.copy(alpha = 0.22f))
                                     .padding(vertical = 8.dp)
                             ) {
                                 Text(
                                     text = strings.inboxReplySentToast,
                                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
                                     fontWeight = FontWeight.Bold,
-                                    color = MorandiGreen
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         } else {
@@ -512,10 +540,10 @@ fun InboxSessionCard(
                                             Box(
                                                 modifier = Modifier
                                                     .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
+                                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
                                                     .border(
                                                         width = 0.8.dp,
-                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                                                        color = ribbonColor.copy(alpha = 0.55f),
                                                         shape = CircleShape
                                                     )
                                                     .clickable {
@@ -527,7 +555,7 @@ fun InboxSessionCard(
                                                 Text(
                                                     text = "⚡ $quickText",
                                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                                    color = MaterialTheme.colorScheme.primary,
+                                                    color = MaterialTheme.colorScheme.onSurface,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                             }
@@ -579,7 +607,7 @@ fun InboxSessionCard(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(
-                                                if (canSend) MaterialTheme.colorScheme.primary
+                                                if (canSend) ribbonColor
                                                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
                                             )
                                             .clickable(enabled = canSend) {
@@ -591,7 +619,7 @@ fun InboxSessionCard(
                                             text = "${strings.inboxBtnSend} ➢",
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
                                             fontWeight = FontWeight.Bold,
-                                            color = if (canSend) MaterialTheme.colorScheme.onPrimary
+                                            color = if (canSend) Color.White
                                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                         )
                                     }
@@ -600,7 +628,6 @@ fun InboxSessionCard(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
-                            // 底部操作按钮行
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End,
@@ -658,7 +685,7 @@ private fun RawMessageRow(
                 fontSize = 11.5.sp,
                 lineHeight = 16.sp
             ),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f),
             modifier = Modifier.weight(1f)
         )
     }
@@ -673,8 +700,8 @@ private fun ActionChipButton(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(accentColor.copy(alpha = 0.14f))
-            .border(0.8.dp, accentColor.copy(alpha = 0.40f), RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
+            .border(0.8.dp, accentColor.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
